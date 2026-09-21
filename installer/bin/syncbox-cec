@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+# HDMI-CEC follower. ONLY works if the Pi's own HDMI output is plugged into a TV input
+# (CEC physical address comes from the sink's EDID; otherwise the adapter stays at f.f.f.f).
+# TV standby -> LEDs off. TV on -> LEDs on. Uses cec-ctl (v4l-utils), which works on Pi 4 and Pi 5.
+set -u
+CEC=/dev/cec0
+ADDR=$(cec-ctl -d $CEC -S 2>/dev/null | grep -i "Physical Address" | head -1 | awk '{print $NF}')
+if [ -z "$ADDR" ] || [ "$ADDR" = "f.f.f.f" ]; then echo "CEC: no valid physical address ($ADDR); Pi HDMI not connected to the TV. Exiting."; exit 0; fi
+cec-ctl -d $CEC --playback --osd-name SyncBox >/dev/null
+api() { curl -s -X POST -H 'content-type: application/json' -d "$1" http://127.0.0.1/api/power >/dev/null; }
+cec-ctl -d $CEC --monitor 2>/dev/null | while read -r line; do
+  case "$line" in
+    *STANDBY*|*Standby*)                 echo "CEC: TV standby -> LEDs off"; api '{"on":false}';;
+    *IMAGE_VIEW_ON*|*ACTIVE_SOURCE*|*Image-View-On*|*Active-Source*) echo "CEC: TV active -> LEDs on"; api '{"on":true}';;
+  esac
+done

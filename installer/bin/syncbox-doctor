@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+# Print everything needed to diagnose the box in one screen.
+echo "== syncbox doctor $(date -Is)"
+echo "-- model:      $(tr -d '\0' </proc/device-tree/model 2>/dev/null)"
+echo "-- os:         $(. /etc/os-release; echo $PRETTY_NAME) kernel $(uname -r)"
+echo "-- uptime:     $(uptime -p)"
+echo "-- throttled:  $(vcgencmd get_throttled 2>/dev/null)   (0x0 is good; 0x50000 = was under-volted; see docs/07)"
+echo "-- temp:       $(vcgencmd measure_temp 2>/dev/null)"
+echo "-- usb_max_current_enable: $(vcgencmd get_config usb_max_current_enable 2>/dev/null)"
+echo "-- overlay:    $(grep -q overlayroot /proc/cmdline && echo ACTIVE || echo inactive)"
+echo "-- watchdog:   $(ls /dev/watchdog* 2>/dev/null | tr '\n' ' ') RuntimeWatchdogSec=$(grep -E '^RuntimeWatchdogSec' /etc/systemd/system.conf | cut -d= -f2)"
+echo "-- boot time:  $(systemd-analyze 2>/dev/null | head -1)"
+echo "-- services:"; for s in "hyperhdr@$(ls /home | head -1)" syncbox-ui syncbox-status syncbox-cec avahi-daemon; do printf "   %-28s %s\n" "$s" "$(systemctl is-active $s 2>/dev/null)"; done
+echo "-- restarts (hyperhdr): $(journalctl -u "hyperhdr@$(ls /home | head -1)" --no-pager 2>/dev/null | grep -c 'Started')"
+echo "-- video devices:"; v4l2-ctl --list-devices 2>/dev/null | sed 's/^/   /' | head -12
+echo "-- grabber formats:"; v4l2-ctl -d /dev/video0 --list-formats-ext 2>/dev/null | grep -E "^\s+\[|Size" | head -8 | sed 's/^/   /'
+echo "-- serial LED driver: $(ls /dev/ttyACM* /dev/ttyUSB* 2>/dev/null | tr '\n' ' ')"
+echo "-- audio inputs:"; arecord -l 2>/dev/null | grep card | sed 's/^/   /'
+echo "-- network:    $(hostname).local $(hostname -I)"
+echo "-- hyperhdr:   $(curl -s -m 2 -X POST -H 'content-type: application/json' -d '{"command":"serverinfo"}' http://127.0.0.1:8090/json-rpc | head -c 300)"

@@ -1,0 +1,36 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Sync Box</title>
+<style>
+:root{--bg:#0e0f13;--card:#181a21;--fg:#eee;--mut:#8b90a0;--acc:#7c5cff;--ok:#38c172;--bad:#e3342f}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font:17px/1.4 system-ui,sans-serif}
+main{max-width:480px;margin:0 auto;padding:16px;display:grid;gap:14px}
+.card{background:var(--card);border-radius:14px;padding:16px}
+h1{font-size:20px;margin:0 0 4px}.st{color:var(--mut);font-size:14px}.st b{color:var(--ok)}.st b.bad{color:var(--bad)}
+.row{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}.row2{grid-template-columns:1fr 1fr}
+button{padding:14px 6px;border:1px solid #2c3140;border-radius:12px;background:#0e0f13;color:var(--fg);font-size:16px}
+button.on{background:var(--acc);border-color:var(--acc)}#power{width:100%;padding:18px;font-size:20px}
+input[type=range]{width:100%;accent-color:var(--acc)}a{color:var(--mut)}
+</style></head><body><main>
+<div class="card"><h1>Sync Box</h1><div class="st" id="st">connecting…</div></div>
+<div class="card"><button id="power">Power</button></div>
+<div class="card"><div class="st">Mode</div><div class="row" id="modes">
+<button data-m="game">Game</button><button data-m="video">Video</button><button data-m="movie">Movie</button><button data-m="music">Music</button></div></div>
+<div class="card"><div class="st">Intensity</div><div class="row" id="inten">
+<button data-i="subtle">Subtle</button><button data-i="moderate">Moderate</button><button data-i="high">High</button><button data-i="extreme">Extreme</button></div></div>
+<div class="card"><div class="st">Brightness <span id="bv"></span></div><input type="range" id="bri" min="0" max="100"></div>
+<div class="card st">Input: follows whichever HDMI source is active (auto-switch). &nbsp;<a href="/advanced">Advanced</a></div>
+</main><script>
+const $=s=>document.querySelector(s);let S={};
+async function post(p,b){const r=await fetch(p,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(b)});const j=await r.json();if(j.state)S=j.state;render();if(j.warnings&&j.warnings.length)console.warn(j.warnings);}
+function render(){$('#power').className=S.power?'on':'';$('#power').textContent=S.power?'On':'Off';
+document.querySelectorAll('#modes button').forEach(b=>b.className=b.dataset.m===S.mode&&S.power?'on':'');
+document.querySelectorAll('#inten button').forEach(b=>b.className=b.dataset.i===S.intensity?'on':'');
+$('#bri').value=S.brightness??90;$('#bv').textContent=(S.brightness??90)+'%';
+const h=S.hyperhdr||{};$('#st').innerHTML=S.online?(h.video_active?'<b>syncing</b> · HDMI signal':'<b class="bad">no HDMI signal</b> · ambient'):'<b class="bad">engine offline</b>';}
+async function poll(){try{S=await (await fetch('/api/state')).json();render();}catch(e){$('#st').textContent='disconnected';}}
+$('#power').onclick=()=>post('/api/power',{on:!S.power});
+document.querySelectorAll('#modes button').forEach(b=>b.onclick=()=>post('/api/mode',{mode:b.dataset.m}));
+document.querySelectorAll('#inten button').forEach(b=>b.onclick=()=>post('/api/intensity',{intensity:b.dataset.i}));
+let t;$('#bri').oninput=e=>{$('#bv').textContent=e.target.value+'%';clearTimeout(t);t=setTimeout(()=>post('/api/brightness',{brightness:+e.target.value}),250)};
+poll();setInterval(poll,3000);
+</script></body></html>

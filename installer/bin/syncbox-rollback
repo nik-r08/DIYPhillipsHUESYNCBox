@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+# Reinstall the previous HyperHDR package kept by syncbox-update / install.sh.
+set -euo pipefail
+[ "$(id -u)" = 0 ] || { echo "run with sudo"; exit 1; }
+if grep -q overlayroot /proc/cmdline 2>/dev/null; then echo "SD card is read-only (overlay). Disable it first: sudo syncbox-persist disable"; exit 2; fi
+PREV=$(cat /var/lib/syncbox/previous-version 2>/dev/null || true)
+[ -n "$PREV" ] && [ "$PREV" != none ] || { echo "no previous version recorded"; exit 1; }
+DEB=$(ls -t /var/lib/syncbox/debs/hyperhdr_*"${PREV}"*.deb 2>/dev/null | head -1)
+[ -n "$DEB" ] || { echo "previous package $PREV not found in /var/lib/syncbox/debs"; exit 1; }
+apt-get install -y --allow-downgrades "$DEB"
+apt-mark hold hyperhdr
+echo "rolled back to $PREV and held. 'sudo apt-mark unhold hyperhdr' to allow updates again."
+systemctl restart "hyperhdr@$(ls /home | head -1).service"

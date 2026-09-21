@@ -1,0 +1,49 @@
+{
+  "_comment": "Applied once by the wizard through HyperHDR's JSON-RPC 'config setconfig'. Keys follow HyperHDR v22 schema names (sources/base/schema). Anything HyperHDR rejects is logged and skipped. Label: UNT until run against a real HyperHDR.",
+  "videoGrabber": {
+    "enable": true,
+    "device": "auto",
+    "videoMode": "640x480",
+    "fps": 60,
+    "videoEncoding": "YUYV",
+    "hdrToneMapping": true,
+    "hdrToneMappingMode": 1,
+    "autoSignalDetection": true,
+    "signalDetection": false,
+    "cropLeft": 0, "cropRight": 0, "cropTop": 0, "cropBottom": 0,
+    "led_off_pause": true
+  },
+  "blackborderdetector": {
+    "enable": true,
+    "threshold": 10,
+    "mode": "default"
+  },
+  "smoothing": {
+    "enable": true,
+    "type": "HybridRgbInterpolator",
+    "updateFrequency": 50,
+    "time_ms": 120,
+    "antiFlickeringFilter": true
+  },
+  "device": {
+    "type": "hyperserial",
+    "output": "auto",
+    "rate": 2000000,
+    "espHandshake": true,
+    "maxRetry": 0,
+    "colorOrder": "grb"
+  },
+  "modes": {
+    "_comment": "syncbox-ui presets. time_ms is smoothing time; sat/bri are HyperHDR adjustment gains (1.0 = neutral).",
+    "game":  {"time_ms": 30,  "updateFrequency": 60, "saturationGain": 1.2, "brightness": 100},
+    "video": {"time_ms": 120, "updateFrequency": 50, "saturationGain": 1.1, "brightness": 90},
+    "movie": {"time_ms": 300, "updateFrequency": 50, "saturationGain": 1.0, "brightness": 75},
+    "music": {"effect": "Music: Pulse", "brightness": 90}
+  },
+  "intensity": {
+    "subtle":   {"saturationGain": 0.9, "brightness_scale": 0.6, "time_scale": 2.0},
+    "moderate": {"saturationGain": 1.0, "brightness_scale": 0.8, "time_scale": 1.3},
+    "high":     {"saturationGain": 1.2, "brightness_scale": 1.0, "time_scale": 1.0},
+    "extreme":  {"saturationGain": 1.5, "brightness_scale": 1.0, "time_scale": 0.5}
+  }
+}

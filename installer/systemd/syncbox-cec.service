@@ -1,0 +1,14 @@
+[Unit]
+Description=DIY Sync Box HDMI-CEC follower (TV standby -> LEDs off)
+After=hyperhdr@__USER__.service
+ConditionPathExists=/dev/cec0
+
+[Service]
+Type=simple
+User=root
+ExecStart=/usr/local/bin/syncbox-cec
+Restart=on-failure
+RestartSec=30
+
+[Install]
+WantedBy=multi-user.target

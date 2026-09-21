@@ -1,0 +1,11 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Sync Box advanced</title>
+<style>:root{--bg:#0e0f13;--card:#181a21;--fg:#eee;--mut:#8b90a0;--acc:#7c5cff}body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.4 system-ui,sans-serif}
+main{max-width:480px;margin:0 auto;padding:16px;display:grid;gap:12px}.card{background:var(--card);border-radius:14px;padding:16px}h1{font-size:18px;margin:0 0 8px}
+button{padding:12px;border:0;border-radius:12px;background:var(--acc);color:#fff;font-size:15px;width:100%;margin:4px 0}button.sec{background:#2c3140}pre{color:var(--mut);font-size:12px;white-space:pre-wrap;max-height:300px;overflow:auto}a{color:var(--mut)}</style></head>
+<body><main>
+<div class="card"><h1>Advanced</h1><a href="/">← back</a></div>
+<div class="card"><h1>Engine</h1><button onclick="window.open('http://{{ host }}:8090/','_blank')">Open HyperHDR (all settings, LUT calibration, Hue, audio effects)</button><button class="sec" onclick="location.href='/wizard'">Rerun setup wizard</button></div>
+<div class="card"><h1>Health</h1><button class="sec" onclick="run('doctor')">Run diagnostics</button><button class="sec" onclick="run('persist-status')">SD card protection status</button><pre id="out"></pre></div>
+<div class="card"><h1>Updates</h1><div style="color:var(--mut);font-size:14px">Update installs the latest HyperHDR from its apt repository and this box's own files. Rollback reinstalls the previous HyperHDR package. If the SD card is locked read-only, unlock it first (sudo syncbox-persist disable).</div>
+<button onclick="if(confirm('Update now?'))run('update')">Update</button><button class="sec" onclick="if(confirm('Roll back to the previous HyperHDR?'))run('rollback')">Roll back</button><button class="sec" onclick="if(confirm('Reboot?'))run('reboot')">Reboot</button></div>
+</main><script>async function run(a){document.querySelector('#out').textContent='running…';const j=await (await fetch('/api/system/'+a,{method:'POST'})).json();document.querySelector('#out').textContent=j.out||j.error||JSON.stringify(j);}</script></body></html>

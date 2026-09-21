@@ -1,0 +1,45 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Sync Box setup</title>
+<style>
+:root{--bg:#0e0f13;--card:#181a21;--fg:#eee;--mut:#8b90a0;--acc:#7c5cff}*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:17px/1.4 system-ui,sans-serif}main{max-width:480px;margin:0 auto;padding:16px;display:grid;gap:14px}
+.card{background:var(--card);border-radius:14px;padding:16px}h1{font-size:20px;margin:0 0 8px}.mut{color:var(--mut);font-size:14px}
+label{display:flex;justify-content:space-between;align-items:center;margin:8px 0;gap:8px}input,select{background:#0e0f13;color:var(--fg);border:1px solid #2c3140;border-radius:8px;padding:8px;width:110px}
+button{padding:12px;border:0;border-radius:12px;background:var(--acc);color:#fff;font-size:16px;width:100%;margin-top:8px}button.sec{background:#2c3140}
+.step{display:none}.step.on{display:block}pre{color:var(--mut);font-size:13px;white-space:pre-wrap}
+</style></head><body><main>
+<div class="card"><h1>Sync Box setup</h1><div class="mut">Five steps. You can rerun this from Advanced.</div></div>
+
+<div class="card step on" id="s1"><h1>1. Your TV</h1>
+<label>Screen size (inches)<input type="number" id="inches" value="{{ state.tv_inches }}"></label>
+<label>Sides with LEDs<select id="sides"><option value="3">3 (top + sides)</option><option value="4">4 (all round)</option></select></label>
+<label>LEDs per metre<select id="density"><option>60</option><option>96</option><option>144</option></select></label>
+<button onclick="suggest()">Suggest LED counts</button></div>
+
+<div class="card step" id="s2"><h1>2. LED counts</h1><div class="mut">Count the LEDs you actually mounted on each edge, seen from the front of the TV.</div>
+<label>Top<input type="number" id="top"></label><label>Right<input type="number" id="right"></label>
+<label>Bottom<input type="number" id="bottom"></label><label>Left<input type="number" id="left"></label>
+<label>Strip starts at<select id="start"><option>bottom-left</option><option>top-left</option><option>top-right</option><option>bottom-right</option></select></label>
+<label>Runs<select id="dir"><option value="clockwise">clockwise</option><option value="counterclockwise">counter-clockwise</option></select></label>
+<button onclick="applyLayout()">Send layout to the engine</button><pre id="o2"></pre></div>
+
+<div class="card step" id="s3"><h1>3. Calibrate</h1><div class="mut">Each button lights the whole strip in one colour for 20 s. The engine's layout editor (Advanced) shows which LEDs map where; if the picture appears rotated or mirrored later, change the start corner or direction in step 2 and resend.</div>
+<button onclick="cal('top')">Test: red</button><button onclick="cal('right')">Test: green</button><button onclick="cal('left')">Test: yellow</button><button class="sec" onclick="calStop()">Stop test</button><pre id="o3"></pre>
+<button onclick="go(4)">Looks right</button></div>
+
+<div class="card step" id="s4"><h1>4. Philips Hue (optional)</h1><div class="mut">Hue is driven by the engine's built-in Hue Entertainment output. Open the engine page, LED Hardware, add a second instance with controller type "philipshue", press the bridge button when asked, and pick your Entertainment Area. This is marked <b>untested</b> in this project until you confirm it.</div>
+<button class="sec" onclick="window.open('http://'+location.hostname+':8090/','_blank')">Open engine (port 8090)</button><button onclick="go(5)">Skip / done</button></div>
+
+<div class="card step" id="s5"><h1>5. Finish</h1><div class="mut">The box now boots straight into sync. After a few days of use, lock the SD card read-only from Advanced.</div>
+<button onclick="finish()">Finish</button></div>
+</main><script>
+const $=s=>document.querySelector(s);const L={{ state.leds | tojson }};
+['top','right','bottom','left'].forEach(k=>$('#'+k).value=L[k]);$('#start').value=L.start||'bottom-left';$('#dir').value=L.direction||'clockwise';
+function go(n){document.querySelectorAll('.step').forEach(s=>s.classList.remove('on'));$('#s'+n).classList.add('on');window.scrollTo(0,0);}
+async function suggest(){const q=`inches=${$('#inches').value}&sides=${$('#sides').value}&density=${$('#density').value}`;const j=await (await fetch('/api/suggest?'+q)).json();['top','right','bottom','left'].forEach(k=>$('#'+k).value=j[k]);go(2);}
+async function applyLayout(){const body={tv_inches:+$('#inches').value,leds:{top:+$('#top').value,right:+$('#right').value,bottom:+$('#bottom').value,left:+$('#left').value,start:$('#start').value,direction:$('#dir').value}};
+const j=await (await fetch('/api/wizard',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(body)})).json();$('#o2').textContent=JSON.stringify(j,null,1);if(j.ok)go(3);}
+async function cal(e){const j=await (await fetch('/api/calibrate',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({edge:e})})).json();$('#o3').textContent=JSON.stringify(j);}
+async function calStop(){await fetch('/api/calibrate',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({stop:true})});}
+async function finish(){await fetch('/api/wizard',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({done:true,leds:{top:+$('#top').value,right:+$('#right').value,bottom:+$('#bottom').value,left:+$('#left').value,start:$('#start').value,direction:$('#dir').value}})});location.href='/';}
+</script></body></html>

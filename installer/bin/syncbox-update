@@ -1,0 +1,18 @@
+#!/usr/bin/env bash
+# One-command update: HyperHDR from apt + this box's files from the repo. Keeps the previous .deb for rollback.
+set -euo pipefail
+[ "$(id -u)" = 0 ] || { echo "run with sudo"; exit 1; }
+if grep -q overlayroot /proc/cmdline 2>/dev/null; then echo "SD card is read-only (overlay). Run: sudo syncbox-persist disable && sudo reboot, then update."; exit 2; fi
+mkdir -p /var/lib/syncbox/debs
+CUR=$(dpkg-query -W -f='${Version}' hyperhdr 2>/dev/null || echo none)
+echo "current HyperHDR: $CUR"
+apt-get update
+apt-get install -y --download-only hyperhdr
+cp -n /var/cache/apt/archives/hyperhdr_*.deb /var/lib/syncbox/debs/ 2>/dev/null || true
+apt-get install -y hyperhdr
+echo "$CUR" > /var/lib/syncbox/previous-version
+NEW=$(dpkg-query -W -f='${Version}' hyperhdr)
+echo "HyperHDR: $CUR -> $NEW"
+curl -fsSL "${SYNCBOX_REPO_RAW:-https://raw.githubusercontent.com/nik-r08/DIYPhillipsHUESYNCBox/main}/installer/install.sh" | SYNCBOX_USER="$(ls /home | head -1)" bash
+systemctl restart syncbox-ui syncbox-status || true
+echo "update complete"

@@ -1,8 +1,8 @@
 __pycache__/
 *.pyc
 .pytest_cache/
-pi/venv/
-pi/config.yaml
-esp32/.pio/
-esp32/src/secrets.h
+reference/python-pipeline/venv/
+reference/python-pipeline/config.yaml
+reference/esp32-firmware/.pio/
+reference/esp32-firmware/src/secrets.h
 *.log

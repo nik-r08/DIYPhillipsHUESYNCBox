@@ -172,7 +172,7 @@ class VideoProcessor:
         self.rects = rects
         self.n = len(rects)
         self.sample_w = int(sample_width)
-        self.sample_h = max(int(round(self.sample_w * 9 / 16)), 8)
+        self.sample_h = max(round(self.sample_w * 9 / 16), 8)
         self.sampler = ZoneSampler(rects, self.sample_w, self.sample_h)
         self.bars = BlackBarDetector()
         self.smoother = Smoother(self.n)
@@ -190,9 +190,9 @@ class VideoProcessor:
                 # crop the ORIGINAL frame at the same proportions, then resize again
                 h, w = frame_bgr.shape[:2]
                 fy0 = rect.y0 * h // self.sample_h
-                fy1 = int(math.ceil(rect.y1 * h / self.sample_h))
+                fy1 = math.ceil(rect.y1 * h / self.sample_h)
                 fx0 = rect.x0 * w // self.sample_w
-                fx1 = int(math.ceil(rect.x1 * w / self.sample_w))
+                fx1 = math.ceil(rect.x1 * w / self.sample_w)
                 cropped = frame_bgr[fy0:fy1, fx0:fx1]
                 small = resize_area(cropped, self.sample_w, self.sample_h)
                 luma = luminance(small[..., ::-1].astype(np.float32))

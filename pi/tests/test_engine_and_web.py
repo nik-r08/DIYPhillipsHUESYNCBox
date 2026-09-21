@@ -38,7 +38,7 @@ def test_fallback_when_no_signal(tmp_path):
 
 
 def test_web_api_roundtrip(tmp_path):
-    engine, mem = make_engine(tmp_path)
+    engine, _mem = make_engine(tmp_path)
     app = create_app(engine)
     c = app.test_client()
     t = threading.Thread(target=engine.run, kwargs={"duration": 1.0}, daemon=True)

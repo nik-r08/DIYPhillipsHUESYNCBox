@@ -1,0 +1,85 @@
+# DIY Hue Sync Box configuration.  Every key is optional; missing keys use the
+# defaults in syncbox/config.py.  The web UI edits this file live.
+target_fps: 30
+
+capture:
+  device: /dev/video0        # USB HDMI capture card; "synthetic" for a test pattern
+  width: 640
+  height: 360
+  fps: 30
+  fourcc: MJPG
+  sample_width: 256
+  black_bar_detection: true
+  signal_timeout: 3.0
+  black_timeout: 30.0
+
+leds:                        # LED counts on each edge of the TV
+  top: 72
+  right: 40
+  bottom: 72
+  left: 40
+  start: bottom-left         # corner where the strip starts (LED #0)
+  direction: clockwise       # seen from the FRONT of the TV
+  offset: 0
+  border: 0.08               # sample the outer 8% of the picture
+
+processing:
+  mode: video                # game | video | movie | music | static
+  intensity: high            # subtle | moderate | high | extreme
+  brightness: 0.8
+  saturation: 1.3
+  gamma: 2.2
+  black_threshold: 12
+  content_brightness: true
+  spatial_smoothing: 1
+  modes:
+    game:  {tau_up: 0.02, tau_down: 0.06}
+    video: {tau_up: 0.08, tau_down: 0.20}
+    movie: {tau_up: 0.30, tau_down: 0.60}
+  static_color: [255, 140, 40]
+
+fallback:
+  when_no_signal: static     # static | off | music
+  color: [40, 20, 80]
+
+audio:
+  enabled: false
+  device: null               # run tools/list_devices.sh to find the index/name
+  samplerate: 48000
+  channels: 2
+  blocksize: 1024
+  ms2109_fix: false
+  sensitivity: 1.0
+  react_in_video: true
+  video_bass_boost: 0.3
+  beat_flash: 0.25
+  music_style: pulse         # pulse | spectrum
+
+outputs:
+  wled:                      # ESP32 running WLED (or esp32/ firmware) over Wi-Fi
+    enabled: true
+    host: wled.local
+    port: 4048
+    leds: 0                  # 0 = same as layout
+    color_correction: [255, 176, 240]
+  adalight:                  # ESP32/Arduino over USB serial (no Wi-Fi needed)
+    enabled: false
+    port: /dev/ttyUSB0
+    baud: 115200
+  spi:                       # WS2812B wired straight to the Pi (GPIO10 via level shifter)
+    enabled: false
+    device: /dev/spidev0.0
+    color_order: GRB
+    color_correction: [255, 176, 240]
+  hue:                       # Philips Hue Entertainment streaming
+    enabled: false
+    bridge: ""
+    app_key: ""
+    client_key: ""
+    entertainment_id: ""
+    max_rate: 25
+    channel_map: {}
+
+web:
+  host: 0.0.0.0
+  port: 8080

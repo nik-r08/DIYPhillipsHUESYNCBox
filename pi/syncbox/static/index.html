@@ -1,0 +1,246 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DIY Sync Box</title>
+<style>
+  :root { --bg:#0f1115; --card:#181b22; --fg:#e6e6e6; --muted:#8a90a0; --accent:#7c5cff; }
+  * { box-sizing: border-box; }
+  body { margin:0; font: 15px/1.4 system-ui, sans-serif; background:var(--bg); color:var(--fg); }
+  header { padding:14px 20px; display:flex; gap:16px; align-items:center; border-bottom:1px solid #262a33; }
+  header h1 { font-size:18px; margin:0; }
+  #status { color:var(--muted); font-size:13px; }
+  main { max-width:1000px; margin:0 auto; padding:16px; display:grid; gap:16px; grid-template-columns: 1fr; }
+  @media (min-width:800px) { main { grid-template-columns: 1fr 1fr; } }
+  .card { background:var(--card); border-radius:10px; padding:16px; }
+  .card h2 { font-size:14px; text-transform:uppercase; letter-spacing:.06em; color:var(--muted); margin:0 0 12px; }
+  label { display:flex; justify-content:space-between; align-items:center; gap:12px; margin:8px 0; }
+  label span.val { color:var(--muted); min-width:3em; text-align:right; }
+  input[type=range] { flex:1; accent-color:var(--accent); }
+  input[type=text], input[type=number], select { background:#0f1115; color:var(--fg); border:1px solid #2c3140; border-radius:6px; padding:6px 8px; }
+  input[type=number] { width:80px; }
+  .modes { display:flex; gap:6px; flex-wrap:wrap; }
+  .modes button { flex:1; padding:10px; border:1px solid #2c3140; border-radius:8px; background:#0f1115; color:var(--fg); cursor:pointer; }
+  .modes button.active { background:var(--accent); border-color:var(--accent); }
+  canvas { width:100%; aspect-ratio:16/9; background:#000; border-radius:8px; display:block; }
+  button.primary { background:var(--accent); color:#fff; border:0; border-radius:8px; padding:10px 14px; cursor:pointer; }
+  .row { display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
+  .full { grid-column: 1 / -1; }
+  pre { font-size:12px; color:var(--muted); white-space:pre-wrap; margin:0; }
+</style>
+</head>
+<body>
+<header>
+  <h1>DIY Sync Box</h1>
+  <div id="status">connecting…</div>
+</header>
+<main>
+  <section class="card full">
+    <h2>Mode</h2>
+    <div class="modes" id="modes">
+      <button data-mode="game">Game</button>
+      <button data-mode="video">Video</button>
+      <button data-mode="movie">Movie</button>
+      <button data-mode="music">Music</button>
+      <button data-mode="static">Static</button>
+      <button data-mode="calibrate">Calibrate</button>
+    </div>
+    <label>Intensity
+      <select data-path="processing.intensity">
+        <option>subtle</option><option>moderate</option><option>high</option><option>extreme</option>
+      </select>
+    </label>
+  </section>
+
+  <section class="card">
+    <h2>Live preview</h2>
+    <canvas id="preview" width="640" height="360"></canvas>
+  </section>
+
+  <section class="card">
+    <h2>Picture</h2>
+    <label>Brightness <input type="range" min="0" max="1" step="0.01" data-path="processing.brightness"><span class="val"></span></label>
+    <label>Saturation <input type="range" min="0.5" max="2.5" step="0.05" data-path="processing.saturation"><span class="val"></span></label>
+    <label>Gamma <input type="range" min="1" max="3" step="0.1" data-path="processing.gamma"><span class="val"></span></label>
+    <label>Black threshold <input type="range" min="0" max="60" step="1" data-path="processing.black_threshold"><span class="val"></span></label>
+    <label>Spatial smoothing <input type="range" min="0" max="3" step="1" data-path="processing.spatial_smoothing"><span class="val"></span></label>
+    <label>Scene-adaptive brightness <input type="checkbox" data-path="processing.content_brightness"></label>
+    <label>Black-bar detection <input type="checkbox" data-path="capture.black_bar_detection"></label>
+    <label>Static colour <input type="color" data-path="processing.static_color" data-type="color"></label>
+  </section>
+
+  <section class="card">
+    <h2>Smoothing (seconds)</h2>
+    <label>Game attack <input type="range" min="0.005" max="0.5" step="0.005" data-path="processing.modes.game.tau_up"><span class="val"></span></label>
+    <label>Game release <input type="range" min="0.005" max="1" step="0.005" data-path="processing.modes.game.tau_down"><span class="val"></span></label>
+    <label>Video attack <input type="range" min="0.005" max="0.5" step="0.005" data-path="processing.modes.video.tau_up"><span class="val"></span></label>
+    <label>Video release <input type="range" min="0.005" max="1" step="0.005" data-path="processing.modes.video.tau_down"><span class="val"></span></label>
+    <label>Movie attack <input type="range" min="0.005" max="1" step="0.005" data-path="processing.modes.movie.tau_up"><span class="val"></span></label>
+    <label>Movie release <input type="range" min="0.005" max="2" step="0.005" data-path="processing.modes.movie.tau_down"><span class="val"></span></label>
+  </section>
+
+  <section class="card">
+    <h2>Audio</h2>
+    <label>Enabled <input type="checkbox" data-path="audio.enabled"></label>
+    <label>Sensitivity <input type="range" min="0.2" max="3" step="0.1" data-path="audio.sensitivity"><span class="val"></span></label>
+    <label>React in video modes <input type="checkbox" data-path="audio.react_in_video"></label>
+    <label>Bass boost <input type="range" min="0" max="1" step="0.05" data-path="audio.video_bass_boost"><span class="val"></span></label>
+    <label>Beat flash <input type="range" min="0" max="1" step="0.05" data-path="audio.beat_flash"><span class="val"></span></label>
+    <label>Music style <select data-path="audio.music_style"><option>pulse</option><option>spectrum</option></select></label>
+    <pre id="audio"></pre>
+  </section>
+
+  <section class="card">
+    <h2>LED layout</h2>
+    <div class="row">
+      <label>Top <input type="number" min="0" data-path="leds.top"></label>
+      <label>Right <input type="number" min="0" data-path="leds.right"></label>
+      <label>Bottom <input type="number" min="0" data-path="leds.bottom"></label>
+      <label>Left <input type="number" min="0" data-path="leds.left"></label>
+    </div>
+    <label>Start corner <select data-path="leds.start"><option>bottom-left</option><option>top-left</option><option>top-right</option><option>bottom-right</option></select></label>
+    <label>Direction <select data-path="leds.direction"><option>clockwise</option><option>counterclockwise</option></select></label>
+    <label>Offset (LEDs) <input type="number" data-path="leds.offset"></label>
+    <label>Border <input type="range" min="0.02" max="0.3" step="0.01" data-path="leds.border"><span class="val"></span></label>
+  </section>
+
+  <section class="card">
+    <h2>No-signal fallback</h2>
+    <label>Behaviour <select data-path="fallback.when_no_signal"><option>static</option><option>off</option><option>music</option></select></label>
+    <label>Colour <input type="color" data-path="fallback.color" data-type="color"></label>
+  </section>
+
+  <section class="card">
+    <h2>Outputs</h2>
+    <label>WLED enabled <input type="checkbox" data-path="outputs.wled.enabled"></label>
+    <label>WLED host <input type="text" data-path="outputs.wled.host"></label>
+    <label>WLED LED count (0 = layout) <input type="number" data-path="outputs.wled.leds"></label>
+    <label>Adalight serial <input type="checkbox" data-path="outputs.adalight.enabled"></label>
+    <label>Serial port <input type="text" data-path="outputs.adalight.port"></label>
+    <label>Pi SPI (GPIO10) <input type="checkbox" data-path="outputs.spi.enabled"></label>
+    <hr style="border-color:#262a33">
+    <label>Hue enabled <input type="checkbox" data-path="outputs.hue.enabled"></label>
+    <label>Bridge IP <input type="text" data-path="outputs.hue.bridge" placeholder="auto"></label>
+    <div class="row">
+      <button class="primary" id="pair">Pair (press bridge button first)</button>
+      <button class="primary" id="areas">List entertainment areas</button>
+    </div>
+    <label>Entertainment area <select id="areaSel" data-path="outputs.hue.entertainment_id"></select></label>
+    <pre id="hueInfo"></pre>
+  </section>
+
+  <section class="card full">
+    <h2>Status</h2>
+    <pre id="statusDump"></pre>
+  </section>
+</main>
+<script>
+const $ = s => document.querySelector(s);
+const $$ = s => Array.from(document.querySelectorAll(s));
+let config = null;
+let pending = {};
+let timer = null;
+
+const getPath = (obj, path) => path.split('.').reduce((o, k) => (o == null ? undefined : o[k]), obj);
+const setPath = (obj, path, value) => { const ks = path.split('.'); let o = obj; ks.slice(0, -1).forEach(k => { o[k] = o[k] || {}; o = o[k]; }); o[ks.at(-1)] = value; };
+const toHex = rgb => '#' + rgb.map(v => Number(v).toString(16).padStart(2, '0')).join('');
+const fromHex = h => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16));
+
+function render() {
+  $$('[data-path]').forEach(el => {
+    const v = getPath(config, el.dataset.path);
+    if (v === undefined) return;
+    if (el.type === 'checkbox') el.checked = !!v;
+    else if (el.dataset.type === 'color') el.value = toHex(v);
+    else if (el.id !== 'areaSel') el.value = v;
+    const val = el.parentElement.querySelector('.val');
+    if (val) val.textContent = v;
+  });
+  $$('#modes button').forEach(b => b.classList.toggle('active', b.dataset.mode === config.processing.mode));
+}
+
+function queue(path, value) {
+  setPath(pending, path, value);
+  clearTimeout(timer);
+  timer = setTimeout(async () => {
+    const body = pending; pending = {};
+    const r = await fetch('/api/config', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) });
+    config = await r.json(); render();
+  }, 250);
+}
+
+$$('[data-path]').forEach(el => {
+  el.addEventListener('input', () => {
+    let v;
+    if (el.type === 'checkbox') v = el.checked;
+    else if (el.dataset.type === 'color') v = fromHex(el.value);
+    else if (el.type === 'number' || el.type === 'range') v = Number(el.value);
+    else v = el.value;
+    const val = el.parentElement.querySelector('.val');
+    if (val) val.textContent = v;
+    queue(el.dataset.path, v);
+  });
+});
+$$('#modes button').forEach(b => b.addEventListener('click', async () => {
+  await fetch('/api/mode', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ mode: b.dataset.mode }) });
+  config.processing.mode = b.dataset.mode; render();
+}));
+
+$('#pair').onclick = async () => {
+  $('#hueInfo').textContent = 'pairing…';
+  const r = await fetch('/api/hue/pair', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ bridge: getPath(config, 'outputs.hue.bridge') }) });
+  const j = await r.json();
+  $('#hueInfo').textContent = JSON.stringify(j, null, 1);
+  if (j.paired) { config = await (await fetch('/api/config')).json(); render(); }
+};
+$('#areas').onclick = async () => {
+  const r = await fetch('/api/hue/areas'); const j = await r.json();
+  $('#hueInfo').textContent = JSON.stringify(j, null, 1);
+  if (Array.isArray(j)) {
+    const sel = $('#areaSel'); sel.innerHTML = '';
+    j.forEach(a => { const o = document.createElement('option'); o.value = a.id; o.textContent = `${a.name} (${a.channels.length} ch)`; sel.appendChild(o); });
+    sel.value = getPath(config, 'outputs.hue.entertainment_id') || (j[0] && j[0].id);
+    queue('outputs.hue.entertainment_id', sel.value);
+  }
+};
+
+// ---- live preview: draw each LED zone in its current colour around a 16:9 frame
+const canvas = $('#preview'), ctx = canvas.getContext('2d');
+function edgeRects(l) {
+  const b = l.border, rects = [];
+  const edge = (e, n) => { for (let i = 0; i < n; i++) { const a = i / n, c = (i + 1) / n;
+    if (e === 'top') rects.push([a, 0, c, b]); else if (e === 'right') rects.push([1 - b, a, 1, c]);
+    else if (e === 'bottom') rects.push([1 - c, 1 - b, 1 - a, 1]); else rects.push([0, 1 - c, b, 1 - a]); } };
+  let segs = [['bottom-left', () => edge('left', l.left)], ['top-left', () => edge('top', l.top)], ['top-right', () => edge('right', l.right)], ['bottom-right', () => edge('bottom', l.bottom)]];
+  // build clockwise list, then reorder like zones.py
+  const built = segs.map(([name, fn]) => { rects.length = 0; fn(); return [name, rects.slice()]; });
+  let ordered = built;
+  if (l.direction === 'counterclockwise') ordered = [['bottom-left', built[3][1].slice().reverse()], ['bottom-right', built[2][1].slice().reverse()], ['top-right', built[1][1].slice().reverse()], ['top-left', built[0][1].slice().reverse()]];
+  const k = ordered.findIndex(s => s[0] === l.start);
+  ordered = ordered.slice(k).concat(ordered.slice(0, k));
+  let flat = ordered.flatMap(s => s[1]);
+  const off = ((l.offset || 0) % flat.length + flat.length) % flat.length;
+  return flat.slice(off).concat(flat.slice(0, off));
+}
+async function drawPreview() {
+  try {
+    const j = await (await fetch('/api/preview')).json();
+    const rects = edgeRects(j.layout);
+    ctx.fillStyle = '#000'; ctx.fillRect(0, 0, canvas.width, canvas.height);
+    rects.forEach((r, i) => { ctx.fillStyle = j.colors[i] || '#000';
+      ctx.fillRect(r[0] * canvas.width, r[1] * canvas.height, (r[2] - r[0]) * canvas.width + 0.5, (r[3] - r[1]) * canvas.height + 0.5); });
+  } catch (e) { /* ignore */ }
+}
+async function pollStatus() {
+  try {
+    const s = await (await fetch('/api/status')).json();
+    $('#status').textContent = `${s.signal ? 'signal' : 'NO SIGNAL'} · capture ${s.capture_fps} fps · engine ${s.engine_fps} fps · ${s.effective_mode}`;
+    $('#statusDump').textContent = JSON.stringify(s, null, 1);
+    $('#audio').textContent = s.audio ? `bass ${s.audio.bass ?? '-'}  mid ${s.audio.mid ?? '-'}  treble ${s.audio.treble ?? '-'}  ${s.audio.error ? '(' + s.audio.error + ')' : ''}` : '';
+  } catch (e) { $('#status').textContent = 'disconnected'; }
+}
+(async () => { config = await (await fetch('/api/config')).json(); render(); setInterval(drawPreview, 100); setInterval(pollStatus, 1000); pollStatus(); })();
+</script>
+</body>
+</html>

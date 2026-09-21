@@ -1,0 +1,19 @@
+# /etc/systemd/system/syncbox.service
+[Unit]
+Description=DIY Hue Sync Box
+After=network-online.target sound.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=pi
+WorkingDirectory=/home/pi/DIYPhillipsHUESYNCBox/pi
+ExecStart=/home/pi/DIYPhillipsHUESYNCBox/pi/venv/bin/python -m syncbox --config /home/pi/DIYPhillipsHUESYNCBox/pi/config.yaml
+Restart=always
+RestartSec=3
+Nice=-5
+# Needed for the SPI output and audio devices
+SupplementaryGroups=video audio spi gpio dialout
+
+[Install]
+WantedBy=multi-user.target

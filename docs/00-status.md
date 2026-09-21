@@ -69,6 +69,22 @@ Blunt summary: **the entire capture path, every LED output, and the Hue output h
 | HyperHDR feature list in docs/05 | COMM, to be re-verified | written from memory of the HyperHDR wiki; Phase 1 re-checks each item with sources |
 | Hue Entertainment 25 Hz recommendation, ~20 channels per area | UNT | from memory of the Hue developer docs; to be re-verified in Phase 4 |
 
+## Added after the audit (Phases 1 to 5, same date)
+
+| Item | Level | Evidence |
+|---|---|---|
+| HyperHDR capabilities cited in docs/01 | COMM | GitHub wiki, discussions, release tags and schema files, fetched 2026-09-21 |
+| HDMI unit, grabber, Pi, PSU, strip facts and prices in docs/02 | COMM for product specs; prices are search-snippet observations, not live pages | links and dates in docs/02 |
+| Enclosure model `hardware/enclosure.scad` | UNT | never rendered or printed; two component sizes are estimates |
+| `installer/install.sh`, `persist.sh`, systemd units, `syncbox-update/rollback/cec/doctor` | UNT | shell syntax checked only; never run on a Pi |
+| `syncbox-ui` (control page, wizard, mode presets) | SYN | 5 tests against a fake HyperHDR JSON-RPC server (`tools/tests/test_ui.py`); HyperHDR section names from the v22 schema |
+| `hyperhdr-defaults.json` | UNT | key names from the schema; values are judgement |
+| `image/build.sh` pi-gen stage | UNT | follows pi-gen conventions; never built |
+| `tools/tests/latency_from_video.py` | SYN | recovers a planted 50 ms delay from a synthetic 240 fps clip |
+| `gen_latency_video.py`, `gen_test_patterns.py` | SYN | produce playable mp4v files in the container |
+| `led_rate_monitor.py`, `soak_logger.sh`, `boot_time.sh` | UNT | written to documented interfaces |
+| Acceptance results T0 to T9 | pending user measurement | docs/07 |
+
 ## What this means for the product
 
 - Nothing here should be sold as working until the acceptance tests in `docs/07-acceptance-tests.md` have been run on real hardware and recorded.
